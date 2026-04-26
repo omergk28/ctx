@@ -110,6 +110,15 @@ func TestRun_BenignCommands(t *testing.T) {
 		"grep pseudo file.txt",
 		"go test ./...",
 		"make build",
+		// Print/log statements naming dangerous commands must
+		// NOT trip the guard — they're print arguments, not
+		// commands being run.
+		"echo rm -rf /",
+		"echo sudo make install",
+		`echo "sudo rm -rf /"`,
+		`echo "Remove-Item -Recurse -Force C:\\"`,
+		`git log --grep="rm -rf /"`,
+		"$(echo sudo)",
 	}
 	for _, cmd := range benign {
 		t.Run(cmd, func(t *testing.T) {
@@ -179,14 +188,17 @@ func TestRun_Chmod777(t *testing.T) {
 	}
 }
 
-// TestRun_GitPushForce: --force / -f must be blocked, but
-// --force-with-lease must be allowed.
+// TestRun_GitPushForce: --force / -f (including combined short
+// flag bundles like -fu) must be blocked; --force-with-lease must
+// be allowed.
 func TestRun_GitPushForce(t *testing.T) {
 	blocked := []string{
 		"git push --force",
 		"git push -f",
 		"git push origin main --force",
 		"git push origin main -f",
+		"git push -fu origin main",
+		"git push -uf origin main",
 	}
 	for _, cmd := range blocked {
 		t.Run("block/"+cmd, func(t *testing.T) {
@@ -231,13 +243,19 @@ func TestRun_BlockResponseShape(t *testing.T) {
 }
 
 // TestRun_PowerShellRemoveItem: PowerShell Remove-Item targeting
-// system root or user home must be blocked.
+// system root or user home must be blocked across all flag
+// orderings (canonical, reversed, and target-between-flags).
 func TestRun_PowerShellRemoveItem(t *testing.T) {
 	for _, cmd := range []string{
 		`Remove-Item -Recurse -Force C:\`,
 		`Remove-Item -Recurse -Force C:\Users`,
+		`Remove-Item -Force -Recurse C:\`,
+		`Remove-Item -Recurse C:\ -Force`,
+		`Remove-Item -Force C:\ -Recurse`,
 		`Remove-Item -Recurse -Force $env:USERPROFILE`,
 		`Remove-Item -Recurse -Force $env:USERPROFILE\Documents`,
+		`Remove-Item -Force -Recurse $env:USERPROFILE`,
+		`Remove-Item -Recurse $env:USERPROFILE -Force`,
 	} {
 		t.Run(cmd, func(t *testing.T) {
 			requireBlock(t, runCmd(t, cmd))

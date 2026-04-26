@@ -11,7 +11,6 @@ package dangerous
 // intentional: more specific patterns are listed first so a single
 // command never produces an ambiguous variant.
 type Match struct {
-	Variant      string
-	DescKey      string
-	MatchedInput string
+	Variant string
+	DescKey string
 }
