@@ -17,6 +17,8 @@ DO NOT UPDATE FOR:
 <!-- INDEX:START -->
 | Date | Learning |
 |------|--------|
+| 2026-04-26 | OpenCode tool.execute.before swallows thrown errors; deny by mutating output.args |
+| 2026-04-26 | OpenCode opencode.json MCP shape: command is Array<string>, no separate args field |
 | 2026-04-26 | make test exit code unreliable due to -cover covdata tooling issue |
 | 2026-04-26 | Trailing word boundary in regex matches commit-tree as git commit |
 | 2026-04-26 | ctx system help can list project-local hooks not in the Go binary |
@@ -26,6 +28,26 @@ DO NOT UPDATE FOR:
 <!-- INDEX:END -->
 
 <!-- Add gotchas, tips, and lessons learned here -->
+## [2026-04-26-170000] OpenCode tool.execute.before swallows thrown errors; deny by mutating output.args
+
+**Context**: After shipping the OpenCode `tool.execute.before` hook for block-dangerous-commands, in-session smoke tests showed `sudo whoami` reaching the actual shell despite the plugin throwing an `Error` with the block reason. The plugin file was the new one (`grep tool.execute.before` returned 1), the binary was current (017d1f815), and the JSON envelope round-tripped through `ctx system block-dangerous-commands` correctly returned `{"decision":"block"}`.
+
+**Lesson**: `@opencode-ai/plugin` v1.4.x types `tool.execute.before` as `(input, output) => Promise<void>` with `output.args` as the only mutable field. There is no documented deny/abort/cancel path. Throwing an `Error` from the before-hook is silently dropped by the OpenCode runtime — the tool runs anyway. The only working deny mechanism is to mutate `output.args.command` (or whatever shape the tool expects) to a no-op shim that prints context and exits non-zero. The bash tool then runs the shim and OpenCode reports the failure to the agent.
+
+**Application**: For any future OpenCode plugin that needs to abort tool execution: replace the args, don't throw. Pattern in `internal/assets/integrations/opencode/plugin/index.ts`: `printf 'reason\\n' >&2; exit 1`. Same advice if porting Claude Code hooks (which DO use thrown decisions / JSON stdout) to OpenCode.
+
+---
+
+## [2026-04-26-165500] OpenCode opencode.json MCP shape: command is Array<string>, no separate args field
+
+**Context**: `ctx setup opencode --write` was generating `opencode.json` with the Copilot CLI MCP shape (`{type: "local", command: "ctx", args: ["mcp", "serve"]}`). OpenCode rejected the file at startup with `Configuration is invalid… Expected array, got "ctx" mcp.ctx.command` and `Missing key mcp.ctx.enabled`.
+
+**Lesson**: OpenCode's `McpLocalConfig` (in `@opencode-ai/sdk`) defines `command: Array<string>` as a single field that holds the binary AND its arguments — there is no separate `args` field. It also requires `enabled: boolean` at runtime even though the TS type marks it optional. The Copilot CLI MCP shape is similar in spirit but structurally different; do not copy-paste between them.
+
+**Application**: For OpenCode MCP entries always use `command: ["ctx", "mcp", "serve"]` and include `enabled: true`. If you add a new editor integration with its own MCP file format, read the upstream type definitions from `node_modules/@<vendor>/sdk/dist/gen/types.gen.d.ts` (or equivalent) before reusing an existing generator.
+
+---
+
 ## [2026-04-26-152850] make test exit code unreliable due to -cover covdata tooling issue
 
 **Context**: make test exited 1 even with all 123 packages passing on this Go install; root cause is missing covdata tool when -cover is enabled

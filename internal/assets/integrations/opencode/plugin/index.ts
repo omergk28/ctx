@@ -38,7 +38,9 @@ export default ((ctx) => ({
   },
   "tool.execute.before": async ({ tool, sessionID }, output) => {
     if (!SHELL_TOOLS.has(tool)) return
-    const cmd = extractCommand(output?.args)
+    const args = output?.args
+    if (!args || typeof args !== "object") return
+    const cmd = extractCommand(args)
     if (!cmd) return
     const envelope = JSON.stringify({
       session_id: sessionID,
@@ -62,9 +64,19 @@ export default ((ctx) => ({
       // Unparseable output → fail open.
       return
     }
-    if (decision?.decision === "block") {
-      throw new Error(decision.reason ?? "ctx: blocked dangerous command")
-    }
+    if (decision?.decision !== "block") return
+
+    // OpenCode's tool.execute.before contract (per
+    // @opencode-ai/plugin v1.4.x) exposes only `output.args` as a
+    // mutable surface; thrown errors are silently ignored. To
+    // actually prevent the dangerous command from running, replace
+    // it with a no-op shim that prints the block reason to stderr
+    // and exits 1. The bash tool runs the shim, OpenCode reports
+    // the failure with the reason as the agent-visible output.
+    const reason = decision.reason ?? "ctx: blocked dangerous command"
+    const escaped = reason.replace(/'/g, `'\\''`)
+    ;(args as { command?: string }).command =
+      `printf 'ctx hook blocked:\\n%s\\n' '${escaped}' >&2; exit 1`
   },
   "tool.execute.after": async ({ tool, args }) => {
     if (SHELL_TOOLS.has(tool)) {

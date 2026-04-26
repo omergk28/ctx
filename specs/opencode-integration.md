@@ -44,8 +44,11 @@ and `session.idle` to `ctx system` nudges, runs `post-commit` after
 shell commands that contain `git commit`, runs
 `check-task-completion` after edit/write tool calls, and gates shell
 tool calls through `ctx system block-dangerous-commands` via
-`tool.execute.before` (throws on a `{"decision":"block"}` response,
-fails open on missing binary). Tool name strings target
+`tool.execute.before`. On a `{"decision":"block"}` response the
+plugin mutates `output.args.command` to a stderr-printing exit-1
+shim (OpenCode silently ignores thrown errors from the before-hook,
+so the only deny path is to replace the command before it runs);
+fails open on missing binary. Tool name strings target
 `@opencode-ai/plugin` v1.4.x; unrecognized tools silently no-op.
 
 **`plugin/package.json`**:
