@@ -17,6 +17,7 @@ DO NOT UPDATE FOR:
 <!-- INDEX:START -->
 | Date | Learning |
 |------|--------|
+| 2026-04-26 | OpenCode auto-loads only flat .ts files under .opencode/plugins/; subdirectories are ignored |
 | 2026-04-26 | OpenCode tool.execute.before swallows thrown errors; deny by mutating output.args |
 | 2026-04-26 | OpenCode opencode.json MCP shape: command is Array<string>, no separate args field |
 | 2026-04-26 | make test exit code unreliable due to -cover covdata tooling issue |
@@ -28,6 +29,16 @@ DO NOT UPDATE FOR:
 <!-- INDEX:END -->
 
 <!-- Add gotchas, tips, and lessons learned here -->
+## [2026-04-26-180000] OpenCode auto-loads only flat .ts files under .opencode/plugins/; subdirectories are ignored
+
+**Context**: Initial OpenCode integration deployed the plugin as `.opencode/plugins/ctx/index.ts` (a directory with index.ts inside, mirroring npm package conventions). End-to-end smoke testing showed the plugin file was correct, the binary was current, and `ctx system block-dangerous-commands` returned the right JSON when piped manually — yet OpenCode never invoked any of the plugin's hooks (no `module-load` trace fired even with verbose `--log-level DEBUG`). Copying the same content to a flat `.opencode/plugins/ctx.ts` file made the plugin load and fire correctly.
+
+**Lesson**: OpenCode's plugin auto-discovery only scans top-level files under `.opencode/plugins/` and `~/.config/opencode/plugins/`. Subdirectories are silently skipped — there's no log line indicating a subdirectory was found and ignored. The official docs at opencode.ai/docs/plugins/ say only "files in these directories are automatically loaded at startup" without specifying the rule, so this is easy to miss. The `opencode plugin <module>` CLI registers npm modules (a different code path) and accepts only npm names, not local paths.
+
+**Application**: Deploy single-file plugins as `.opencode/plugins/<name>.ts`, not `.opencode/plugins/<name>/index.ts`. No `package.json` is required when the plugin uses type-only imports (`import type` is erased at compile time) and the host runtime injects the plugin context. To verify a plugin is actually loaded, add a top-of-module side effect (e.g. `appendFileSync` to a known path) and confirm it fires before debugging hook contracts.
+
+---
+
 ## [2026-04-26-170000] OpenCode tool.execute.before swallows thrown errors; deny by mutating output.args
 
 **Context**: After shipping the OpenCode `tool.execute.before` hook for block-dangerous-commands, in-session smoke tests showed `sudo whoami` reaching the actual shell despite the plugin throwing an `Error` with the block reason. The plugin file was the new one (`grep tool.execute.before` returned 1), the binary was current (017d1f815), and the JSON envelope round-tripped through `ctx system block-dangerous-commands` correctly returned `{"decision":"block"}`.

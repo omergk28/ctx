@@ -26,8 +26,7 @@ scripts) — not a build dependency. All real logic stays in Go via `ctx system`
 ```
 internal/assets/integrations/opencode/
 ├── plugin/
-│   ├── index.ts          # Thin shim plugin (~50 lines)
-│   └── package.json      # Minimal: name, version, @opencode-ai/plugin dep
+│   └── index.ts          # Thin shim plugin (~80 lines)
 └── skills/               # ctx skills in OpenCode format
     ├── ctx-agent/SKILL.md
     ├── ctx-remember/SKILL.md
@@ -51,18 +50,13 @@ so the only deny path is to replace the command before it runs);
 fails open on missing binary. Tool name strings target
 `@opencode-ai/plugin` v1.4.x; unrecognized tools silently no-op.
 
-**`plugin/package.json`**:
-```json
-{
-  "name": "ctx-opencode-plugin",
-  "version": "0.1.0",
-  "type": "module",
-  "main": "index.ts",
-  "dependencies": {
-    "@opencode-ai/plugin": "^1.4.0"
-  }
-}
-```
+**Deployment layout**: OpenCode auto-loads top-level `.ts`/`.js`
+files under `.opencode/plugins/`; subdirectories are NOT scanned.
+The setup deploys a single flat file at `.opencode/plugins/ctx.ts`.
+No `package.json` is needed — the plugin uses a type-only import
+of `@opencode-ai/plugin` (erased at compile time) and the host
+runtime provides the plugin context, so there's no runtime
+dependency tree to install.
 
 **`skills/`** — Subset of portable skills (ctx-agent, ctx-remember, ctx-status,
 ctx-wrap-up). Format: YAML frontmatter + markdown body, same as Copilot CLI skills.
@@ -110,7 +104,7 @@ Add:
 ```go
 DisplayOpenCode      = "OpenCode"
 MCPConfigPathOpenCode = "opencode.json"
-PluginPathOpenCode    = ".opencode/plugins/ctx/"
+PluginPathOpenCode    = ".opencode/plugins/ctx.ts"
 SkillsPathOpenCode    = ".opencode/skills/"
 ```
 
@@ -133,12 +127,11 @@ hook.opencode:
     OpenCode Integration
     ====================
 
-    Generate .opencode/plugins/ctx/ with ctx lifecycle hooks
+    Generate .opencode/plugins/ctx.ts with ctx lifecycle hooks
     and register the ctx MCP server in opencode.json.
 
     This creates:
-      .opencode/plugins/ctx/index.ts      Plugin shim
-      .opencode/plugins/ctx/package.json   Dependencies
+      .opencode/plugins/ctx.ts             Plugin shim
       .opencode/skills/ctx-*/SKILL.md      ctx skills
       opencode.json                        MCP server registration
 
@@ -170,7 +163,7 @@ write.hook-opencode-summary:
 internal/cli/setup/core/opencode/
 ├── doc.go           # Package documentation
 ├── opencode.go      # Deploy() entry point
-├── plugin.go        # deployPlugin() — writes .opencode/plugins/ctx/
+├── plugin.go        # deployPlugin() — writes .opencode/plugins/ctx.ts
 ├── mcp.go           # ensureMCPConfig() — merges opencode.json
 ├── skill.go         # deploySkills() — writes .opencode/skills/
 └── agents.go        # deployAgents() — writes AGENTS.md (shared template)
@@ -179,7 +172,7 @@ internal/cli/setup/core/opencode/
 **`opencode.go` — Deploy()**:
 ```go
 func Deploy(cmd *cobra.Command) error {
-    // 1. Deploy plugin files (.opencode/plugins/ctx/)
+    // 1. Deploy the plugin file (.opencode/plugins/ctx.ts)
     if pluginErr := deployPlugin(cmd); pluginErr != nil {
         return pluginErr
     }
@@ -202,14 +195,17 @@ func Deploy(cmd *cobra.Command) error {
 
 **`mcp.go` — ensureMCPConfig()**:
 
-OpenCode MCP config lives in `opencode.json` at project root:
+OpenCode MCP config lives in `opencode.json` at project root. Per
+the `@opencode-ai/sdk` `McpLocalConfig` schema, `command` is a
+single string array holding the binary and its arguments (no
+separate `args` field) and `enabled` is required:
 ```json
 {
   "mcp": {
     "ctx": {
       "type": "local",
-      "command": "ctx",
-      "args": ["mcp", "serve"]
+      "command": ["ctx", "mcp", "serve"],
+      "enabled": true
     }
   }
 }
@@ -220,9 +216,14 @@ entry, write back. Preserve all other config keys.
 
 **`plugin.go` — deployPlugin()**:
 
-Extract embedded `index.ts` and `package.json` to `.opencode/plugins/ctx/`.
-Skip if `index.ts` already exists (idempotent). OpenCode auto-runs
-`bun install` in plugin directories at startup.
+Write the embedded `index.ts` content to a flat
+`.opencode/plugins/ctx.ts` file. Skip if the target already exists
+(idempotent). OpenCode only auto-loads top-level files under
+`.opencode/plugins/`; subdirectories are NOT scanned, which is why
+the deployment is a single flat file rather than a directory.
+No `package.json` is shipped — the plugin uses a type-only import
+of `@opencode-ai/plugin` and the host runtime provides the plugin
+context, so there's no runtime dependency tree to install.
 
 ### 9. Write Setup Functions (`internal/write/setup/hook.go`)
 
@@ -294,11 +295,17 @@ case cfgHook.ToolOpenCode:
 1. **Build**: `make build` — verify compilation with new package
 2. **Dry run**: `ctx setup opencode` — should print integration instructions
 3. **Write**: `ctx setup opencode --write` in a test project — verify:
-   - `.opencode/plugins/ctx/index.ts` created
-   - `.opencode/plugins/ctx/package.json` created
-   - `opencode.json` has `mcp.ctx` entry (merged, not overwritten)
+   - `.opencode/plugins/ctx.ts` created (flat file; no subdirectory)
+   - `opencode.json` has `mcp.ctx` entry (merged, not overwritten),
+     with `command` as a string array and `enabled: true`
    - `AGENTS.md` created (or skipped if exists with markers)
    - `.opencode/skills/ctx-*/SKILL.md` created
+   - Confirm OpenCode actually loads it: launch
+     `opencode --print-logs --log-level DEBUG` in the test project,
+     ask the agent to run a benign bash command, and verify the
+     plugin's `tool.execute.before` runs (e.g. ask it to run
+     `git push --force` and confirm the tool fails with the block
+     reason as agent-visible output, not the real push)
 4. **Idempotency**: Run `ctx setup opencode --write` twice — second run skips existing
 5. **Lint**: `make lint`
 6. **Test**: `make test`
