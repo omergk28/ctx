@@ -3,6 +3,7 @@
 <!-- INDEX:START -->
 | Date | Decision |
 |------|--------|
+| 2026-04-26 | block-dangerous-commands promoted to a Go subcommand; OpenCode tool.execute.before re-enabled |
 | 2026-04-26 | Editor-integration plugins must filter post-commit to actual git commit invocations |
 | 2026-04-26 | OpenCode plugin ships without tool.execute.before hook |
 | 2026-04-25 | Use t.Setenv for subprocess env in tests, not append(os.Environ(), ...) |
@@ -53,6 +54,20 @@ For significant decisions:
 ✗ No real alternatives existed
 
 -->
+## [2026-04-26-160000] block-dangerous-commands promoted to a Go subcommand; OpenCode tool.execute.before re-enabled
+
+**Status**: Accepted
+
+**Context**: The 2026-04-26-152858 decision shipped the OpenCode plugin without a `tool.execute.before` hook because the natural target (`block-dangerous-commands`) only existed as a Claude Code plugin-local wrapper. That made it impossible to safely shim from non-Claude editors. This decision supersedes that omission.
+
+**Decision**: `block-dangerous-commands` is now a real `ctx system` Go subcommand backed by a single regex set in `internal/config/regex/dangerous.go`. All three editor integrations (Claude Code `hooks.json`, OpenCode `tool.execute.before`, Copilot CLI `ctx-preToolUse.{sh,ps1}`) delegate to it via the same JSON envelope shape. Patterns: sudo, rm -rf /, rm -rf ~, chmod 777, git push --force/-f (allows --force-with-lease), git reset --hard, plus PowerShell Remove-Item against C:\ / $env:USERPROFILE and Format-Volume.
+
+**Rationale**: Centralizing the pattern set in Go gives a single source of truth, identical behavior across editors, real Go test coverage, and a path for future patterns. The Copilot CLI scripts and OpenCode plugin become thin envelope reshapers, not pattern owners.
+
+**Consequences**: New patterns ship via the binary (single update site). The OpenCode plugin throws on `{"decision":"block"}` and fails open on missing binary so installs without the wrapper degrade gracefully rather than blocking every shell call. Supersedes 2026-04-26-152858.
+
+---
+
 ## [2026-04-26-152905] Editor-integration plugins must filter post-commit to actual git commit invocations
 
 **Status**: Accepted
@@ -69,7 +84,7 @@ For significant decisions:
 
 ## [2026-04-26-152858] OpenCode plugin ships without tool.execute.before hook
 
-**Status**: Accepted
+**Status**: Superseded by 2026-04-26-160000
 
 **Context**: The natural fit (block-dangerous-commands) doesn't exist as a ctx system Go subcommand; shimming to it would block every shell call on installs without the Claude wrapper because Cobra's unknown-command exit 1 is read as { blocked: true } by OpenCode
 

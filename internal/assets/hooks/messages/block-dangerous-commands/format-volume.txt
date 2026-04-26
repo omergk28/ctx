@@ -1,0 +1,1 @@
+Blocked drive reformat: 'Format-Volume' destroys all data on the target volume. Ask the user to run this manually if it is genuinely required.

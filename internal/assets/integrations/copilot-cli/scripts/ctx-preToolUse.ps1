@@ -1,5 +1,8 @@
-# ctx preToolUse hook for GitHub Copilot CLI
-# Reads tool invocation JSON from stdin and blocks dangerous commands.
+# ctx preToolUse hook for GitHub Copilot CLI (Windows / PowerShell).
+# Reshapes the Copilot envelope into the ctx hook envelope and
+# delegates the dangerous-command decision to
+# `ctx system block-dangerous-commands` (single source of truth
+# shared with Claude Code and OpenCode integrations).
 $ErrorActionPreference = 'SilentlyContinue'
 
 $RawInput = $input | Out-String
@@ -12,35 +15,36 @@ try {
 }
 
 $ToolName = if ($Data.tool_name) { $Data.tool_name } elseif ($Data.tool) { $Data.tool } else { '' }
+if ($ToolName -ne 'shell' -and $ToolName -ne 'powershell' -and $ToolName -ne 'bash') {
+    exit 0
+}
 
-# Block dangerous shell commands matching known patterns.
-if ($ToolName -eq 'shell' -or $ToolName -eq 'powershell') {
-    $Command = ''
-    if ($Data.input -and $Data.input.command) {
-        $Command = $Data.input.command
-    }
+$Command = ''
+if ($Data.input -and $Data.input.command) {
+    $Command = [string]$Data.input.command
+}
+if (-not $Command) { exit 0 }
 
-    $DangerousPatterns = @(
-        'sudo ',
-        'rm -rf /',
-        'rm -rf ~',
-        'Remove-Item -Recurse -Force C:\',
-        'Remove-Item -Recurse -Force $env:USERPROFILE',
-        'chmod 777',
-        'Format-Volume'
-    )
-    foreach ($Pattern in $DangerousPatterns) {
-        if ($Command -like "*$Pattern*") {
-            Write-Error 'ctx: blocked dangerous command'
-            exit 1
-        }
-    }
+$Envelope = @{
+    session_id = 'copilot-cli'
+    tool_input = @{ command = $Command }
+} | ConvertTo-Json -Compress
 
-    $IrreversiblePatterns = @('git push', 'git reset --hard')
-    foreach ($Pattern in $IrreversiblePatterns) {
-        if ($Command -like "*$Pattern*") {
-            Write-Error 'ctx: blocked irreversible git operation — review first'
-            exit 1
-        }
-    }
+# Run the Go hook. Missing binary → fail open.
+try {
+    $Decision = $Envelope | ctx system block-dangerous-commands 2>$null
+} catch {
+    exit 0
+}
+if (-not $Decision) { exit 0 }
+
+try {
+    $Parsed = $Decision | ConvertFrom-Json
+} catch {
+    exit 0
+}
+
+if ($Parsed.decision -eq 'block') {
+    Write-Error $Decision
+    exit 1
 }

@@ -1,0 +1,1 @@
+Blocked irrecoverable filesystem deletion: 'rm -rf ~' targets the user's home directory. Specify an explicit path under the project tree instead.

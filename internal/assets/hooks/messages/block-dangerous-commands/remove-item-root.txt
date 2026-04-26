@@ -1,0 +1,1 @@
+Blocked irrecoverable filesystem deletion: 'Remove-Item -Recurse -Force C:\' would wipe the Windows system root.

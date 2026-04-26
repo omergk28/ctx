@@ -1124,6 +1124,7 @@ system:
       check-version               Version update nudge
       check-map-staleness         Architecture map staleness nudge
       block-non-path-ctx          Block non-PATH ctx invocations
+      block-dangerous-commands    Block dangerous shell command patterns
       check-task-completion       Task completion nudge after edits
       post-commit                 Post-commit context capture nudge
       qa-reminder                 QA reminder before completion
@@ -1131,6 +1132,18 @@ system:
       check-memory-drift          Memory drift nudge (MEMORY.md changed)
       heartbeat                   Session heartbeat webhook (no stdout)
   short: Hook plumbing (hidden); promoted commands moved to top-level
+system.blockdangerouscommands:
+  long: |-
+    Blocks shell commands matching a curated set of destructive
+    or irreversible patterns: sudo, rm -rf /, rm -rf ~, chmod 777,
+    git push --force / -f (allows --force-with-lease), and
+    git reset --hard. Outputs a JSON block decision that prevents
+    the tool call.
+
+    Hook event: PreToolUse (Bash) / tool.execute.before / preToolUse
+    Output: {"decision":"block","reason":"..."} or silent
+    Silent when: command doesn't match any dangerous pattern
+  short: Block dangerous shell command patterns
 system.blocknonpathctx:
   long: |-
     Blocks ./ctx, go run ./cmd/ctx, and absolute-path ctx invocations.

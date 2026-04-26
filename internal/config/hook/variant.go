@@ -9,8 +9,29 @@ package hook
 // Hook variant constants: template selectors passed to Load and
 // NewTemplateRef to choose the appropriate message for each trigger type.
 const (
+	// VariantChmod777 selects the chmod 777 block message.
+	VariantChmod777 = "chmod-777"
 	// VariantDotSlash selects the relative path (./ctx) block message.
 	VariantDotSlash = "dot-slash"
+	// VariantFormatVolume selects the PowerShell Format-Volume block
+	// message.
+	VariantFormatVolume = "format-volume"
+	// VariantGitPushForce selects the git push --force block message.
+	VariantGitPushForce = "git-push-force"
+	// VariantGitResetHard selects the git reset --hard block message.
+	VariantGitResetHard = "git-reset-hard"
+	// VariantRemoveItemHome selects the PowerShell Remove-Item -Recurse
+	// -Force $env:USERPROFILE block message.
+	VariantRemoveItemHome = "remove-item-home"
+	// VariantRemoveItemRoot selects the PowerShell Remove-Item -Recurse
+	// -Force C:\ block message.
+	VariantRemoveItemRoot = "remove-item-root"
+	// VariantRmRfHome selects the rm -rf ~ block message.
+	VariantRmRfHome = "rm-rf-home"
+	// VariantRmRfRoot selects the rm -rf / block message.
+	VariantRmRfRoot = "rm-rf-root"
+	// VariantSudo selects the sudo escalation block message.
+	VariantSudo = "sudo"
 	// VariantGoRun selects the go run block message.
 	VariantGoRun = "go-run"
 	// VariantAbsolutePath selects the absolute path block message.

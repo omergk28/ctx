@@ -41,17 +41,12 @@ an OpenCode-specific instructions file.
 
 **`plugin/index.ts`** — the core deliverable. Wires `session.created`
 and `session.idle` to `ctx system` nudges, runs `post-commit` after
-shell commands that contain `git commit`, and runs
-`check-task-completion` after edit/write tool calls. Tool name strings
-target `@opencode-ai/plugin` v1.4.x; unrecognized tools silently
-no-op.
-
-We deliberately do **not** ship a `tool.execute.before` hook here:
-the natural fit (block-dangerous-commands) is currently a Claude Code
-plugin-local hook, not a `ctx system` subcommand, so a shim that
-shells out to it would block every shell command on installs that
-don't have the wrapper. Add this back when block-dangerous-commands
-is promoted to the ctx Go binary.
+shell commands that contain `git commit`, runs
+`check-task-completion` after edit/write tool calls, and gates shell
+tool calls through `ctx system block-dangerous-commands` via
+`tool.execute.before` (throws on a `{"decision":"block"}` response,
+fails open on missing binary). Tool name strings target
+`@opencode-ai/plugin` v1.4.x; unrecognized tools silently no-op.
 
 **`plugin/package.json`**:
 ```json

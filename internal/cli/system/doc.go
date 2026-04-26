@@ -54,6 +54,7 @@
 //   - heartbeat: token telemetry and billing check
 //
 // PreToolUse hooks (hidden):
+//   - block-dangerous-commands: blocks dangerous shell patterns
 //   - block-non-path-ctx: blocks non-PATH ctx calls
 //   - context-load-gate: context injection with cooldown
 //   - qa-reminder: lint/test before done reminder

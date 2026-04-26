@@ -9,6 +9,10 @@ package hook
 // Hook name constants: used for Load, NewTemplateRef, notify.Send,
 // and log.Append to avoid magic strings.
 const (
+	// BlockDangerousCommands is the hook name for blocking shell commands that
+	// match the dangerous-pattern set (sudo, rm -rf /, rm -rf ~, chmod 777,
+	// git push --force, git reset --hard).
+	BlockDangerousCommands = "block-dangerous-commands"
 	// BlockNonPathCtx is the hook name for blocking non-PATH ctx invocations.
 	BlockNonPathCtx = "block-non-path-ctx"
 	// CheckAnchorDrift is the hook name for the stale-anchor sanity hook

@@ -1,0 +1,1 @@
+Blocked irrecoverable filesystem deletion: 'rm -rf /' would wipe the system root.

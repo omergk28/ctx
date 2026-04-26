@@ -1,0 +1,1 @@
+Blocked privileged escalation: agents must not run 'sudo' directly. Ask the user to run any privileged command themselves.

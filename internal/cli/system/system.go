@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ActiveMemory/ctx/internal/cli/parent"
+	"github.com/ActiveMemory/ctx/internal/cli/system/cmd/block_dangerous_commands"
 	"github.com/ActiveMemory/ctx/internal/cli/system/cmd/block_non_path_ctx"
 	sysBootstrap "github.com/ActiveMemory/ctx/internal/cli/system/cmd/bootstrap"
 	"github.com/ActiveMemory/ctx/internal/cli/system/cmd/check_anchor_drift"
@@ -57,6 +58,7 @@ import (
 func Cmd() *cobra.Command {
 	return parent.Cmd(cmd.DescKeySystem, cmd.UseSystem,
 		sysBootstrap.Cmd(),
+		block_dangerous_commands.Cmd(),
 		block_non_path_ctx.Cmd(),
 		check_anchor_drift.Cmd(),
 		check_ceremony.Cmd(),

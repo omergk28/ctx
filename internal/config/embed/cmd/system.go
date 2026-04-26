@@ -19,6 +19,9 @@ package cmd
 // under `ctx system` keeps `ctx --help` focused on user-facing
 // commands. The canonical invocation is `ctx system bootstrap`.
 const (
+	// UseSystemBlockDangerousCommands is the cobra Use string for the system
+	// block dangerous commands command.
+	UseSystemBlockDangerousCommands = "block-dangerous-commands"
 	// UseSystemBlockNonPathCtx is the cobra Use string for the system block non
 	// path ctx command.
 	UseSystemBlockNonPathCtx = "block-non-path-ctx"
@@ -103,6 +106,9 @@ const (
 const (
 	// DescKeySystem is the description key for the system command.
 	DescKeySystem = "system"
+	// DescKeySystemBlockDangerousCommands is the description key for the
+	// system block dangerous commands command.
+	DescKeySystemBlockDangerousCommands = "system.blockdangerouscommands"
 	// DescKeySystemBlockNonPathCtx is the description key for the system block
 	// non path ctx command.
 	DescKeySystemBlockNonPathCtx = "system.blocknonpathctx"

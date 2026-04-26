@@ -1,0 +1,1 @@
+Blocked overly permissive mode: 'chmod 777' grants world-writable access. Pick the minimum permissions the task actually needs.

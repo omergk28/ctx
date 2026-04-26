@@ -11,6 +11,10 @@
       },
       {
         "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "CTX_DIR=\"${CLAUDE_PROJECT_DIR:?CLAUDE_PROJECT_DIR unset; cannot anchor ctx}/.context\" ctx system block-dangerous-commands"}]
+      },
+      {
+        "matcher": "Bash",
         "hooks": [{"type": "command", "command": "CTX_DIR=\"${CLAUDE_PROJECT_DIR:?CLAUDE_PROJECT_DIR unset; cannot anchor ctx}/.context\" ctx system qa-reminder"}]
       },
       {

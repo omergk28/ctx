@@ -2,6 +2,51 @@
 # Each entry maps to a template at <hook>/<variant>.txt.
 # Fields: hook, variant, category, description, vars (optional).
 
+- hook: block-dangerous-commands
+  variant: chmod-777
+  category: ctx-specific
+  description: Block chmod 777 (overly permissive permissions)
+
+- hook: block-dangerous-commands
+  variant: format-volume
+  category: ctx-specific
+  description: Block PowerShell Format-Volume (drive reformat)
+
+- hook: block-dangerous-commands
+  variant: git-push-force
+  category: ctx-specific
+  description: Block git push --force (rewrites remote history)
+
+- hook: block-dangerous-commands
+  variant: git-reset-hard
+  category: ctx-specific
+  description: Block git reset --hard (irreversibly discards changes)
+
+- hook: block-dangerous-commands
+  variant: remove-item-home
+  category: ctx-specific
+  description: Block PowerShell Remove-Item against $env:USERPROFILE (home deletion)
+
+- hook: block-dangerous-commands
+  variant: remove-item-root
+  category: ctx-specific
+  description: Block PowerShell Remove-Item against C:\ (root deletion)
+
+- hook: block-dangerous-commands
+  variant: rm-rf-home
+  category: ctx-specific
+  description: Block rm -rf ~ (home directory deletion)
+
+- hook: block-dangerous-commands
+  variant: rm-rf-root
+  category: ctx-specific
+  description: Block rm -rf / (root filesystem deletion)
+
+- hook: block-dangerous-commands
+  variant: sudo
+  category: ctx-specific
+  description: Block sudo invocation (privilege escalation)
+
 - hook: block-non-path-ctx
   variant: absolute-path
   category: ctx-specific

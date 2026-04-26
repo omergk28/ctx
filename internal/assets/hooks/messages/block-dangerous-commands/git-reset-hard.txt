@@ -1,0 +1,1 @@
+Blocked irreversible git operation: 'git reset --hard' discards local changes without recovery. Stash, branch, or commit before resetting.

@@ -5,6 +5,26 @@ block.absolute-path:
   short: 'Use ''ctx'' from PATH, not absolute paths. Ask the user to run: make build && sudo make install'
 block.constitution-suffix:
   short: 'See CONSTITUTION.md: ctx Invocation Invariants'
+block.dangerous-chmod-777:
+  short: Blocked overly permissive mode 'chmod 777' (world-writable access). Pick the minimum permissions the task actually needs.
+block.dangerous-git-push-force:
+  short: Blocked irreversible git operation 'git push --force' (rewrites remote history). Prefer '--force-with-lease' if you must overwrite.
+block.dangerous-git-reset-hard:
+  short: Blocked irreversible git operation 'git reset --hard' (discards local changes without recovery). Stash, branch, or commit first.
+block.dangerous-relay-message:
+  short: Blocked dangerous shell command
+block.dangerous-rm-rf-home:
+  short: Blocked irrecoverable deletion 'rm -rf ~' (targets the user's home). Specify an explicit path under the project tree.
+block.dangerous-rm-rf-root:
+  short: Blocked irrecoverable deletion 'rm -rf /' (would wipe the system root).
+block.dangerous-format-volume:
+  short: 'Blocked drive reformat ''Format-Volume'' (destroys all data on the target volume). Ask the user to run this manually if genuinely required.'
+block.dangerous-remove-item-home:
+  short: 'Blocked irrecoverable deletion ''Remove-Item -Recurse -Force $env:USERPROFILE'' (targets the user''s home). Specify an explicit path under the project tree.'
+block.dangerous-remove-item-root:
+  short: 'Blocked irrecoverable deletion ''Remove-Item -Recurse -Force C:\'' (would wipe the Windows system root).'
+block.dangerous-sudo:
+  short: 'Blocked privilege escalation: agents must not run ''sudo''. Ask the user to run any privileged command themselves.'
 block.dot-slash:
   short: 'Use ''ctx'' from PATH, not ''./ctx'' or ''./dist/ctx''. Ask the user to run: make build && sudo make install'
 block.go-run:

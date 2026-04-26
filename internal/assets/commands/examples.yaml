@@ -435,6 +435,9 @@ system:
       ctx system --help         # list hidden hook plumbing
       ctx system mark-wrapped-up
 
+system.blockdangerouscommands:
+  short: '  ctx system block-dangerous-commands'
+
 system.blocknonpathctx:
   short: '  ctx system block-non-path-ctx'
 

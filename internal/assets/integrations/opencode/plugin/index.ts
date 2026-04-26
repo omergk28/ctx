@@ -36,6 +36,36 @@ export default ((ctx) => ({
       await ctx.$`ctx system check-task-completion 2>/dev/null || true`
     },
   },
+  "tool.execute.before": async ({ tool, sessionID }, output) => {
+    if (!SHELL_TOOLS.has(tool)) return
+    const cmd = extractCommand(output?.args)
+    if (!cmd) return
+    const envelope = JSON.stringify({
+      session_id: sessionID,
+      tool_input: { command: cmd },
+    })
+    let stdout = ""
+    try {
+      const result = await ctx.$`echo ${envelope} | ctx system block-dangerous-commands`.quiet()
+      stdout = result.stdout?.toString() ?? ""
+    } catch {
+      // Subcommand missing or failed — fail open. Re-installing ctx
+      // restores the safety net.
+      return
+    }
+    const trimmed = stdout.trim()
+    if (!trimmed) return
+    let decision: { decision?: string; reason?: string } | null = null
+    try {
+      decision = JSON.parse(trimmed) as { decision?: string; reason?: string }
+    } catch {
+      // Unparseable output → fail open.
+      return
+    }
+    if (decision?.decision === "block") {
+      throw new Error(decision.reason ?? "ctx: blocked dangerous command")
+    }
+  },
   "tool.execute.after": async ({ tool, args }) => {
     if (SHELL_TOOLS.has(tool)) {
       const cmd = extractCommand(args)

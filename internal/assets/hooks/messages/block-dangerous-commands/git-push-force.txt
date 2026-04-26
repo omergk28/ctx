@@ -1,0 +1,1 @@
+Blocked irreversible git operation: 'git push --force' rewrites remote history. If you must overwrite, prefer '--force-with-lease' to preserve concurrent work.
